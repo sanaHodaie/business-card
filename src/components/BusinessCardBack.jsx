@@ -145,35 +145,7 @@ export const BusinessCardBack = ({
           </div>
 
           {/* Interactive Scannable QR Code */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/65 border border-white/90 shadow-xs">
-            {qrDataUrl ? (
-              <div 
-                className="relative p-1.5 bg-white rounded-xl shadow-md shrink-0 cursor-pointer group"
-                onClick={() => setShowQrModal(true)}
-                title="کلیک برای بزرگنمایی QR کد"
-              >
-                <img
-                  src={qrDataUrl}
-                  alt="QR Code vCard Contact"
-                  className="w-16 h-16 rounded-lg object-contain"
-                />
-                <div className="absolute inset-0 bg-slate-900/30 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <QrCodeIcon className="w-5 h-5 text-white" />
-                </div>
-              </div>
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-slate-100 animate-pulse shrink-0" />
-            )}
 
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-900 font-vazir flex items-center gap-1">
-                <span>اسکن برای افزودن سریع مخاطب</span>
-              </p>
-              <p className="text-[11px] text-slate-600 font-vazir mt-0.5 leading-snug">
-                با دوربین گوشی اسکن کنید تا شماره و اطلاعات مستقیماً ذخیره شود.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
