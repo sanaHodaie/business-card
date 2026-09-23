@@ -34,7 +34,7 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
       .catch((err) => console.error('QR code generation error:', err));
   }, []);
 
-  // ---------- 🔗 SHARE HANDLER (Fixed) ----------
+  // ---------- 🔗 SHARE HANDLER (3-tier fallback) ----------
   const handleShare = async () => {
     const shareData = {
       title: `${data.nameFa} - ${data.jobTitleFa}`,
@@ -50,9 +50,8 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
     ) {
       try {
         await navigator.share(shareData);
-        return; // success → done
+        return;
       } catch (err) {
-        // user cancelled → silently exit
         if (err && err.name === 'AbortError') return;
         console.warn('Web Share failed, falling back to clipboard:', err);
       }
@@ -89,21 +88,23 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
       throw new Error('execCommand copy failed');
     } catch (e) {
       console.error('All share methods failed:', e);
-      // Last resort: show link to user
-      window.prompt('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود. لینک را دستی کپی کنید:', window.location.href);
+      window.prompt(
+        'اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود. لینک را دستی کپی کنید:',
+        window.location.href
+      );
     }
   };
 
   return (
     <div
       id="business-card-back"
-      className="relative w-full h-full min-h-[520px] sm:min-h-[540px] max-h-[85vh] sm:max-h-none rounded-[32px] p-5 sm:p-9 flex flex-col justify-between overflow-hidden glass-card-crystal select-text"
+      className="relative w-full h-full min-h-[520px] sm:min-h-[540px] max-h-[85vh] sm:max-h-none rounded-[32px] p-4 sm:p-9 flex flex-col overflow-hidden glass-card-crystal select-text"
     >
       {/* Background network accents */}
       <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-sky-400/25 via-indigo-300/15 to-transparent pointer-events-none rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-amber-400/25 via-pink-300/15 to-transparent pointer-events-none rounded-full blur-3xl" />
 
-      {/* Top Header */}
+      {/* Top Header of the Back */}
       <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-900/10 shrink-0">
         <div>
           <h2 className="text-base sm:text-lg font-black text-slate-900 font-vazir">
@@ -125,8 +126,15 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
         </button>
       </div>
 
-      {/* Middle Content */}
-      <div className="relative z-10 my-2.5 sm:my-3.5 space-y-3.5 sm:space-y-4 flex-1 overflow-y-auto no-scrollbar scroll-smooth pr-0.5 sm:pr-0 overscroll-contain no-flip">
+      {/* Middle Content: Scrollable on mobile */}
+      <div
+        className="relative z-10 my-2.5 sm:my-3.5 space-y-3.5 sm:space-y-4 flex-1 overflow-y-auto scroll-smooth pr-1 sm:pr-0 overscroll-contain no-flip touch-pan-y"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#94a3b8 transparent',
+        }}
+      >
         {/* Short Executive Summary */}
         <div className="p-3 sm:p-3.5 rounded-2xl bg-white/70 border border-white/90 shadow-xs">
           <div className="flex items-center gap-1.5 mb-1 text-xs font-bold text-amber-800 font-vazir">
@@ -207,7 +215,7 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
       </div>
 
       {/* Bottom Action Buttons */}
-      <div className="relative z-10 pt-3 border-t border-slate-900/10 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div className="relative z-10 pt-3 border-t border-slate-900/10 flex flex-wrap items-center justify-between gap-2 shrink-0 mt-auto">
         <button
           onClick={downloadVCardFile}
           type="button"
@@ -242,7 +250,7 @@ export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
         </div>
       </div>
 
-      {/* QR Code Modal */}
+      {/* QR Code Modal for large view */}
       {showQrModal && (
         <div
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
