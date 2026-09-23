@@ -1,23 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { 
-  RotateCcw, 
-  Download, 
-  Share2, 
-  Terminal, 
+import {
+  RotateCcw,
+  Download,
+  Share2,
+  Terminal,
   Sparkles,
   QrCode as QrCodeIcon,
   Check,
-  Copy
+  Copy,
 } from 'lucide-react';
 import { SANA_HODAIE_DATA } from '../data.js';
 import { downloadVCardFile, generateVCardString } from '../utils/vcard.js';
 
-export const BusinessCardBack = ({
-  onFlip,
-  onCopy,
-  copiedField,
-}) => {
+export const BusinessCardBack = ({ onFlip, onCopy, copiedField }) => {
   const data = SANA_HODAIE_DATA;
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
@@ -38,19 +34,63 @@ export const BusinessCardBack = ({
       .catch((err) => console.error('QR code generation error:', err));
   }, []);
 
+  // ---------- 🔗 SHARE HANDLER (Fixed) ----------
   const handleShare = async () => {
-    if (navigator.share) {
+    const shareData = {
+      title: `${data.nameFa} - ${data.jobTitleFa}`,
+      text: `کارت ویزیت دیجیتال ثنا هدائی، معمار ارشد رایانش ابری. تلفن: ${data.phone} - ایمیل: ${data.email}`,
+      url: window.location.href,
+    };
+
+    // 1) Web Share API (mobile / supported browsers)
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function' &&
+      (typeof navigator.canShare !== 'function' || navigator.canShare(shareData))
+    ) {
       try {
-        await navigator.share({
-          title: `${data.nameFa} - ${data.jobTitleFa}`,
-          text: `کارت ویزیت دیجیتال ثنا هدائی، معمار ارشد رایانش ابری. تلفن: ${data.phone} - ایمیل: ${data.email}`,
-          url: window.location.href,
-        });
-      } catch {
-        // User cancelled or share failed
+        await navigator.share(shareData);
+        return; // success → done
+      } catch (err) {
+        // user cancelled → silently exit
+        if (err && err.name === 'AbortError') return;
+        console.warn('Web Share failed, falling back to clipboard:', err);
       }
-    } else {
-      onCopy(window.location.href, 'لینک کارت ویزیت');
+    }
+
+    // 2) Clipboard API fallback
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+        onCopy(window.location.href, 'لینک کارت ویزیت');
+        return;
+      }
+      throw new Error('Clipboard API not available');
+    } catch (clipErr) {
+      console.warn('Clipboard failed, using legacy method:', clipErr);
+    }
+
+    // 3) Legacy execCommand fallback
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = window.location.href;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (ok) {
+        onCopy(window.location.href, 'لینک کارت ویزیت');
+        return;
+      }
+      throw new Error('execCommand copy failed');
+    } catch (e) {
+      console.error('All share methods failed:', e);
+      // Last resort: show link to user
+      window.prompt('اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود. لینک را دستی کپی کنید:', window.location.href);
     }
   };
 
@@ -63,7 +103,7 @@ export const BusinessCardBack = ({
       <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-sky-400/25 via-indigo-300/15 to-transparent pointer-events-none rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-amber-400/25 via-pink-300/15 to-transparent pointer-events-none rounded-full blur-3xl" />
 
-      {/* Top Header of the Back: Title, Tagline & Flip Button (Fixed at top) */}
+      {/* Top Header */}
       <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-900/10 shrink-0">
         <div>
           <h2 className="text-base sm:text-lg font-black text-slate-900 font-vazir">
@@ -85,7 +125,7 @@ export const BusinessCardBack = ({
         </button>
       </div>
 
-      {/* Middle Content: Smooth Scrollable without visible scrollbar on Mobile */}
+      {/* Middle Content */}
       <div className="relative z-10 my-2.5 sm:my-3.5 space-y-3.5 sm:space-y-4 flex-1 overflow-y-auto no-scrollbar scroll-smooth pr-0.5 sm:pr-0 overscroll-contain no-flip">
         {/* Short Executive Summary */}
         <div className="p-3 sm:p-3.5 rounded-2xl bg-white/70 border border-white/90 shadow-xs">
@@ -98,7 +138,7 @@ export const BusinessCardBack = ({
           </p>
         </div>
 
-        {/* Cloud Performance Metrics from Real-world Architecture */}
+        {/* Cloud Performance Metrics */}
         <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           {data.stats.map((st, idx) => (
             <div
@@ -145,11 +185,28 @@ export const BusinessCardBack = ({
           </div>
 
           {/* Interactive Scannable QR Code */}
-
+          {qrDataUrl && (
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="mx-auto p-3 rounded-2xl bg-white border border-white/90 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              title="بزرگ‌نمایی کد QR"
+            >
+              <img
+                src={qrDataUrl}
+                alt="QR Code"
+                className="w-32 h-32 sm:w-36 sm:h-36 group-hover:scale-[1.03] transition-transform duration-300"
+              />
+              <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-bold text-slate-500 font-vazir">
+                <QrCodeIcon className="w-3 h-3" />
+                <span>برای بزرگ‌نمایی کلیک کنید</span>
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Bottom Action Buttons: Download vCard, Share, and Direct Contact (Fixed at bottom) */}
+      {/* Bottom Action Buttons */}
       <div className="relative z-10 pt-3 border-t border-slate-900/10 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <button
           onClick={downloadVCardFile}
@@ -185,17 +242,19 @@ export const BusinessCardBack = ({
         </div>
       </div>
 
-      {/* QR Code Modal for large view */}
+      {/* QR Code Modal */}
       {showQrModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setShowQrModal(false)}
         >
-          <div 
+          <div
             className="p-6 rounded-3xl bg-white/95 border border-white max-w-sm w-full text-center space-y-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-black text-slate-900 font-vazir">اسکن کارت دیجیتال</h3>
+            <h3 className="text-lg font-black text-slate-900 font-vazir">
+              اسکن کارت دیجیتال
+            </h3>
             <p className="text-xs text-slate-600 font-vazir font-medium">
               با اسکن این بارکد با دوربین گوشی هوشمند، مخاطب ثنا هدائی فوراً به دفترچه تلفن شما اضافه می‌شود.
             </p>
